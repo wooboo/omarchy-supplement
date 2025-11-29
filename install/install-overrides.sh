@@ -1,5 +1,5 @@
 #!/bin/bash
-
+rm -rf ~/.config/hypr/overrides.conf
 stow hyprland
 
 set -e
