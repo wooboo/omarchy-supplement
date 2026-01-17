@@ -17,6 +17,18 @@ This repository contains supplementary configuration files, dotfiles, and instal
 - **Tool Setup:** Scripts to install and configure development tools like VS Code, Ghostty, Zen Browser, OpenCode, and more.
 - **Cleanup:** Includes a script to remove unwanted "bloat" software.
 - **Maintenance:** `upstow.sh` for easy package creation from existing home directory configs.
+- **Secret Management:** Integrated Bitwarden CLI and `gomplate` for secure configuration templating.
+
+## BITWARDEN SECRETS SETUP
+To use templated configurations (like OpenCode), you must have a Secure Note in Bitwarden named `dotfiles-secrets` containing a flat JSON object with your keys:
+```json
+{
+  "GITEA_HOST": "https://git.example.com",
+  "GITEA_ACCESS_TOKEN": "your-token",
+  "EXA_API_KEY": "your-key"
+}
+```
+During installation, you will be prompted to login/unlock Bitwarden.
 
 ## Usage
 

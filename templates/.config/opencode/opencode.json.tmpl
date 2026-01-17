@@ -56,8 +56,8 @@
         "docker.gitea.com/gitea-mcp-server"
       ],
       "environment": {
-        "GITEA_HOST": "REPLACE_WITH_YOUR_GITEA_HOST",
-        "GITEA_ACCESS_TOKEN": "REPLACE_WITH_YOUR_GITEA_TOKEN"
+        "GITEA_HOST": "{{ (datasource "secrets").GITEA_HOST }}",
+        "GITEA_ACCESS_TOKEN": "{{ (datasource "secrets").GITEA_ACCESS_TOKEN }}"
       }
     },
     "websearch_exa": {
@@ -65,7 +65,7 @@
       "command": ["npx", "-y", "exa-mcp-server"],
       "timeout": 60000,
       "environment": {
-        "EXA_API_KEY": "REPLACE_WITH_YOUR_EXA_API_KEY"
+        "EXA_API_KEY": "{{ (datasource "secrets").EXA_API_KEY }}"
       }
     }
   }
