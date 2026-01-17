@@ -85,15 +85,25 @@ process_bw_templates() {
             
             # Create temporary file for comparison
             temp_output=$(mktemp)
-            gomplate -d secrets="file://$SECRETS_FILE" -f "$tmpl_path" -o "$temp_output"
+            if ! gomplate -d secrets="file://$SECRETS_FILE" -f "$tmpl_path" -o "$temp_output"; then
+                echo "Error: gomplate failed for $tmpl_path"
+                rm -f "$temp_output"
+                continue
+            fi
             
             # Deep merge if requested and target is JSON
             if [[ "$OPTIONS" == *"--merge-json"* ]] && [ -f "$target_path" ]; then
-                if jq . "$target_path" >/dev/null 2>&1 && jq . "$temp_output" >/dev/null 2>&1; then
+                if jq -e . "$target_path" >/dev/null 2>&1 && jq -e . "$temp_output" >/dev/null 2>&1; then
                     merged_output=$(mktemp)
                     echo "Merging JSON changes for $target_path..."
-                    jq -s '.[0] * .[1]' "$target_path" "$temp_output" > "$merged_output"
-                    mv "$merged_output" "$temp_output"
+                    if jq -s '.[0] * .[1]' "$target_path" "$temp_output" > "$merged_output"; then
+                        mv "$merged_output" "$temp_output"
+                    else
+                        echo "Warning: JSON merge failed for $target_path, falling back to overwrite."
+                        rm -f "$merged_output"
+                    fi
+                else
+                    echo "Notice: Target $target_path or template output is not valid JSON, skipping merge and overwriting."
                 fi
             fi
 
@@ -110,11 +120,15 @@ process_bw_templates() {
             cp "$tmpl_path" "$temp_output"
 
             if [[ "$OPTIONS" == *"--merge-json"* ]] && [ -f "$target_path" ]; then
-                if jq . "$target_path" >/dev/null 2>&1 && jq . "$temp_output" >/dev/null 2>&1; then
+                if jq -e . "$target_path" >/dev/null 2>&1 && jq -e . "$temp_output" >/dev/null 2>&1; then
                     merged_output=$(mktemp)
                     echo "Merging JSON changes for $target_path..."
-                    jq -s '.[0] * .[1]' "$target_path" "$temp_output" > "$merged_output"
-                    mv "$merged_output" "$temp_output"
+                    if jq -s '.[0] * .[1]' "$target_path" "$temp_output" > "$merged_output"; then
+                        mv "$merged_output" "$temp_output"
+                    else
+                        echo "Warning: JSON merge failed for $target_path, falling back to overwrite."
+                        rm -f "$merged_output"
+                    fi
                 fi
             fi
 
