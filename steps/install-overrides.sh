@@ -21,14 +21,18 @@ if [ ! -f "$OVERRIDES_CONFIG" ]; then
     return 1
 fi
 
-# Check if source line already exists in hyprland.conf
-if grep -Fxq "$SOURCE_LINE" "$HYPRLAND_CONFIG"; then
-    echo "Source line already exists in $HYPRLAND_CONFIG"
-else
+# Backup main config before appending source line
+if ! grep -Fxq "$SOURCE_LINE" "$HYPRLAND_CONFIG"; then
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    echo "Backing up $HYPRLAND_CONFIG to ${HYPRLAND_CONFIG}.${TIMESTAMP}.bak"
+    cp "$HYPRLAND_CONFIG" "${HYPRLAND_CONFIG}.${TIMESTAMP}.bak"
+
     echo "Adding source line to $HYPRLAND_CONFIG"
     echo "" >> "$HYPRLAND_CONFIG"
     echo "$SOURCE_LINE" >> "$HYPRLAND_CONFIG"
     echo "Source line added successfully"
+else
+    echo "Source line already exists in $HYPRLAND_CONFIG"
 fi
 
 # Trigger Hyprland reload
