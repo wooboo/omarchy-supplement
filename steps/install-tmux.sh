@@ -1,6 +1,5 @@
 #!/bin/sh
 
-set -e
 
 
 
@@ -13,9 +12,9 @@ rm -rf ~/.tmux.conf
 stow -t "$HOME" -d "$STOW_DIR" tmux
 
 # Check if tmux is installed
-if ! command -v tmux &>/dev/null; then
+if ! command -v tmux >/dev/null 2>&1; then
   echo "tmux installation failed."
-  exit 1
+  return 1
 fi
 
 TPM_DIR="$HOME/.tmux/plugins/tpm"

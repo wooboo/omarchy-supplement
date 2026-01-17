@@ -1,3 +1,3 @@
 #!/bin/sh
 
-yay -S --noconfirm --needed opencode-bin gomplate
+yay -S --noconfirm --needed opencode-bin gomplate-bin

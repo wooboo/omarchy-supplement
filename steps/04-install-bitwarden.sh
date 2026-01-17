@@ -7,5 +7,12 @@ if command -v npm >/dev/null 2>&1; then
 fi
 
 if command -v bw >/dev/null 2>&1; then
-    bw config server https://vault.bitwarden.eu
+    # Only set server if it's not already correct
+    if ! bw config list | grep -q '"server": "https://vault.bitwarden.eu"'; then
+        # Logout if already logged in to allow server change
+        if bw login --check >/dev/null 2>&1; then
+            bw logout
+        fi
+        bw config server https://vault.bitwarden.eu
+    fi
 fi

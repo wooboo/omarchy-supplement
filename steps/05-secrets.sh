@@ -1,6 +1,6 @@
 #!/bin/bash
 
-yay -S --noconfirm --needed gomplate jq
+yay -S --noconfirm --needed gomplate-bin jq
 
 if ! bw login --check >/dev/null 2>&1; then
     export BW_SESSION=$(bw login --raw)
@@ -9,6 +9,11 @@ elif [ -z "$BW_SESSION" ]; then
 fi
 
 SECRETS_FILE="/dev/shm/dotfiles-secrets.json"
+if ! bw get item "dotfiles-secrets" >/dev/null 2>&1; then
+    echo "Error: Bitwarden item 'dotfiles-secrets' not found."
+    echo "Please ensure you have a Secure Note named 'dotfiles-secrets' in your vault."
+    return 1
+fi
 bw get item "dotfiles-secrets" | jq -r '.notes' > "$SECRETS_FILE"
 chmod 600 "$SECRETS_FILE"
 

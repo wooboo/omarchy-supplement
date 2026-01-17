@@ -3,7 +3,6 @@ rm -rf ~/.config/hypr/overrides.conf
 [ -d "dotfiles" ] && STOW_DIR="dotfiles" || STOW_DIR="../dotfiles"
 stow -t "$HOME" -d "$STOW_DIR" hyprland
 
-set -e
 
 HYPRLAND_CONFIG="$HOME/.config/hypr/hyprland.conf"
 OVERRIDES_CONFIG="$HOME/.config/hypr/overrides.conf"
@@ -13,25 +12,30 @@ SOURCE_LINE="source = $OVERRIDES_CONFIG"
 if [ ! -f "$HYPRLAND_CONFIG" ]; then
     echo "Hyprland config not found at $HYPRLAND_CONFIG"
     echo "Please install hyprland first"
-    exit 1
+    return 1
 fi
 
 # Check if overrides config exists
 if [ ! -f "$OVERRIDES_CONFIG" ]; then
     echo "Overrides config not found at $OVERRIDES_CONFIG"
-    exit 1
+    return 1
 fi
 
 # Check if source line already exists in hyprland.conf
 if grep -Fxq "$SOURCE_LINE" "$HYPRLAND_CONFIG"; then
     echo "Source line already exists in $HYPRLAND_CONFIG"
-    # Touching the main config to trigger Hyprland reload
-    touch "$HYPRLAND_CONFIG"
 else
     echo "Adding source line to $HYPRLAND_CONFIG"
     echo "" >> "$HYPRLAND_CONFIG"
     echo "$SOURCE_LINE" >> "$HYPRLAND_CONFIG"
     echo "Source line added successfully"
+fi
+
+# Trigger Hyprland reload
+if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl reload
+else
+    touch "$HYPRLAND_CONFIG"
 fi
 
 echo "Hyprland overrides setup complete!"
