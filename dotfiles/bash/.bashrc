@@ -642,6 +642,9 @@ if [[ $- == *i* ]]; then
 fi
 
 export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin"
+
+# Quick assistant alias
+alias hey='hey'
 # Use ~~ as the trigger sequence instead of the default **
 export FZF_COMPLETION_TRIGGER='~~'
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always --line-range :1000 {}'"

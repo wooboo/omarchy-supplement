@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# 'hey' - A quick assistant for bash/Arch Linux tasks using OpenCode
+# Uses Gemini 3 Flash for fast and cost-effective responses.
+
+if [ -z "$1" ]; then
+    echo "Usage: hey <prompt>"
+    echo "Example: hey how to find all backup files in the current directory?"
+    exit 1
+fi
+
+PROMPT="$*"
+
+# Call opencode with the system instruction to focus on bash/Arch and use Gemini 3 Flash.
+# We use the 'build' agent which is generally good at executing tasks and generating scripts/commands.
+# The prompt is prefixed with instructions to be concise and show commands.
+
+opencode --agent=build --model=antigravity-gemini-3-flash <<EOF
+You are a Linux/Arch Linux terminal assistant. 
+User is asking: $PROMPT
+
+Provide the exact command(s) or a short script to solve the task.
+Be concise. If multiple steps are needed, list them clearly.
+Always show the full command or script.
+EOF
