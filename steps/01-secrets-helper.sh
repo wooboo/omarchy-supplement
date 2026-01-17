@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Ensure prerequisites for secrets management
+yay -S --noconfirm --needed gomplate-bin jq nodejs-lts-jod npm
+
+# Function to process templates using secrets from Bitwarden
+# Usage: process_bw_templates <bw_item_name> <templates_dir>
+process_bw_templates() {
+    local BW_ITEM="$1"
+    local TEMPLATE_DIR="$2"
+    local SECRETS_FILE="/dev/shm/bw-secrets-${BW_ITEM}.json"
+
+    if [ -z "$BW_ITEM" ] || [ -z "$TEMPLATE_DIR" ]; then
+        echo "Usage: process_bw_templates <bw_item_name> <templates_dir>"
+        return 1
+    fi
+
+    if [ ! -d "$TEMPLATE_DIR" ]; then
+        echo "Template directory $TEMPLATE_DIR not found, skipping."
+        return 0
+    fi
+
+    # Bitwarden Auth
+    if ! bw login --check >/dev/null 2>&1; then
+        export BW_SESSION=$(bw login --raw)
+    elif [ -z "$BW_SESSION" ]; then
+        export BW_SESSION=$(bw unlock --raw)
+    fi
+
+    # Fetch secrets
+    if ! bw get item "$BW_ITEM" >/dev/null 2>&1; then
+        echo "Error: Bitwarden item '$BW_ITEM' not found."
+        return 1
+    fi
+
+    echo "Processing templates for $BW_ITEM..."
+    bw get item "$BW_ITEM" | jq -r '.notes' > "$SECRETS_FILE"
+    chmod 600 "$SECRETS_FILE"
+
+    # Process files
+    find "$TEMPLATE_DIR" -type f | while read -r tmpl_path; do
+        rel_path="${tmpl_path#$TEMPLATE_DIR/}"
+        
+        if [[ "$rel_path" == *.tmpl ]]; then
+            target_path="$HOME/${rel_path%.tmpl}"
+            mkdir -p "$(dirname "$target_path")"
+            gomplate -d secrets="file://$SECRETS_FILE" -f "$tmpl_path" -o "$target_path"
+            chmod 600 "$target_path"
+        else
+            target_path="$HOME/$rel_path"
+            mkdir -p "$(dirname "$target_path")"
+            cp "$tmpl_path" "$target_path"
+        fi
+    done
+
+    rm -f "$SECRETS_FILE"
+    return 0
+}
