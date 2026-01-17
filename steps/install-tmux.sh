@@ -9,7 +9,8 @@ set -e
 # Install tmux
 yay -S --noconfirm --needed tmux
 rm -rf ~/.tmux.conf 
-stow tmux
+[ -d "dotfiles" ] && STOW_DIR="dotfiles" || STOW_DIR="../dotfiles"
+stow -t "$HOME" -d "$STOW_DIR" tmux
 
 # Check if tmux is installed
 if ! command -v tmux &>/dev/null; then

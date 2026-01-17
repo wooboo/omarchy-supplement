@@ -15,6 +15,7 @@ This repository contains supplementary configuration files, dotfiles, and instal
   - Hyprland
 - **Tool Setup:** Scripts to install and configure development tools like VS Code, Ghostty, Zen Browser, and more.
 - **Cleanup:** Includes a script to remove unwanted "bloat" software.
+- **Maintenance:** `upstow.sh` for easy package creation from existing home directory configs.
 
 ## Usage
 
@@ -28,7 +29,7 @@ To update the system and install all supplementary tools and configurations:
 
 This script will:
 1. Update the system (`pacman -Syyu`).
-2. Execute all scripts located in the `install/` directory.
+2. Execute all scripts located in the `steps/` directory.
 3. Apply dotfiles using `stow`.
 
 ### Uninstalling Bloat
@@ -41,7 +42,8 @@ To remove specific pre-installed applications (like 1Password, Alacritty, Obsidi
 
 ## Directory Structure
 
-- **`install/`**: Contains individual installation scripts (e.g., `install-ghostty.sh`, `install-vscode.sh`).
+- **`steps/`**: Contains individual installation scripts (e.g., `install-ghostty.sh`, `install-vscode.sh`).
 - **`bash/`, `fastfetch/`, `git/`, `hyprland/`, `mc/`, `starship/`, `tmux/`**: Configuration directories managed by Stow.
 - **`install-all.sh`**: Main entry point for installation.
 - **`uninstall-bloat.sh`**: Script for removing specific packages.
+- **`upstow.sh`**: Helper to copy files from home to the repo's `dotfiles/` package.
