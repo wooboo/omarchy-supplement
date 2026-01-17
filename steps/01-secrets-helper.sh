@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Ensure prerequisites for secrets management
-yay -S --noconfirm --needed gomplate-bin jq nodejs-lts-jod npm
+yay -S --noconfirm --needed gomplate-bin jq npm
 
 # Function to process templates using secrets from Bitwarden
 # Usage: process_bw_templates <bw_item_name> <templates_dir>

@@ -1,12 +1,10 @@
 #!/bin/sh
 
-# Handle conflicts: remove rust if rustup is desired, remove nodejs if nodejs-lts is desired
-for pkg in rust nodejs; do
-    if pacman -Qi "$pkg" >/dev/null 2>&1; then
-        echo "Removing conflicting package $pkg..."
-        sudo pacman -Rns "$pkg" --noconfirm
-    fi
-done
+# Handle conflicts: remove rust if rustup is desired
+if pacman -Qi "rust" >/dev/null 2>&1; then
+    echo "Removing conflicting package rust..."
+    sudo pacman -Rns "rust" --noconfirm
+fi
 
 yay -S --noconfirm --needed base-devel openssl zlib rustup || return 1
 
@@ -18,7 +16,8 @@ fi
 cargo install fnm
 fnm install 24
 fnm use 24
-yay -S --noconfirm --needed nodejs-lts-jod bun deno || true
+# Rely on system node if present, otherwise fnm handles versions
+yay -S --noconfirm --needed bun deno || true
 
 if command -v deno >/dev/null 2>&1; then
     deno completions bash > deno.bash

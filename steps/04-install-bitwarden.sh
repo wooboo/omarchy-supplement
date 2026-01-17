@@ -11,6 +11,7 @@ if command -v bw >/dev/null 2>&1; then
     if ! bw config list | grep -q '"server": "https://vault.bitwarden.eu"'; then
         # Logout if already logged in to allow server change
         if bw login --check >/dev/null 2>&1; then
+            echo "Logging out of Bitwarden to update server URL..."
             bw logout
         fi
         bw config server https://vault.bitwarden.eu
