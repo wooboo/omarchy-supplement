@@ -8,6 +8,7 @@ This repository contains supplementary configuration files, dotfiles, and instal
 - **Dotfile Management:** Uses [GNU Stow](https://www.gnu.org/software/stow/) to manage configurations for Bash, Git, Hyprland, etc.
 - **Secret Management:** Integrated Bitwarden CLI and `gomplate` for secure, step-scoped configuration templating.
 - **Tool Setup:** Scripts for VS Code, Ghostty, Zen Browser, OpenCode, and more.
+- **Assistant:** `hey` and `ok` commands for quick terminal assistance via OpenCode.
 - **Cleanup:** `uninstall-bloat.sh` for removing unwanted software.
 
 ## Bitwarden Secrets Setup

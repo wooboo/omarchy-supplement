@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# 'ok' - Continue the last quick assistant session
+# Uses Gemini 3 Flash for fast and cost-effective responses.
+
+if [ -z "$1" ]; then
+    echo "Usage: ok <prompt>"
+    echo "Example: ok explain the command you just provided"
+    exit 1
+fi
+
+PROMPT="$*"
+
+# Call opencode run with the --continue flag to pick up where 'hey' left off.
+# Format: -m provider/model
+
+opencode run --continue -m google/antigravity-gemini-3-flash "$PROMPT"

@@ -29,7 +29,7 @@ Arch Linux + Hyprland dotfile management and system provisioning repository. Use
 | **Window Rules** | `dotfiles/hyprland/` | See Hyprland overrides |
 | **Shell Aliases** | `dotfiles/bash/.bashrc` | Custom bash environment |
 | **Cleanup** | `uninstall-bloat.sh` | Removes pre-defined bloat software |
-| **Assistant**| `hey` | Quick bash/Arch help via OpenCode |
+| **Assistant**| `hey` / `ok` | Quick bash/Arch help via OpenCode (hey=start, ok=continue) |
 
 ## CONVENTIONS
 - **Stow-First**: All configurations MUST live in `dotfiles/`. Direct edits to `~/.config` are forbidden.
