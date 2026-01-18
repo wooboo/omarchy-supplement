@@ -12,6 +12,8 @@ elif command -v npm >/dev/null 2>&1; then
     npx oh-my-opencode install --no-tui --claude=no --chatgpt=no --gemini=yes
 fi
 
-TEMPLATE_DIR="$REPO_ROOT/templates/opencode"
+TEMPLATE_DIR="$REPO_ROOT/dotfiles/opencode"
 
 process_bw_templates "dotfiles-secrets" "$TEMPLATE_DIR" "--merge-json"
+
+safe_stow opencode

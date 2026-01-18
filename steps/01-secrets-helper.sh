@@ -3,34 +3,6 @@
 # Ensure prerequisites for secrets management
 yay -S --noconfirm --needed gomplate-bin jq npm
 
-# Function to backup a file if it exists and differs from a new version
-# Usage: backup_if_changed <target_file> <new_file_source>
-backup_if_changed() {
-    local TARGET="$1"
-    local NEW_SOURCE="$2"
-    local TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-    if [ ! -f "$TARGET" ]; then
-        return 0
-    fi
-
-    if cmp -s "$TARGET" "$NEW_SOURCE"; then
-        return 0
-    fi
-
-    local BACKUP="${TARGET}.${TIMESTAMP}.bak"
-    echo "Changes detected in $TARGET. Backing up to $BACKUP"
-    
-    # Show diff
-    if command -v colordiff >/dev/null 2>&1; then
-        colordiff -u "$TARGET" "$NEW_SOURCE"
-    else
-        diff -u --color=always "$TARGET" "$NEW_SOURCE"
-    fi
-
-    cp "$TARGET" "$BACKUP"
-}
-
 # Function to process templates using secrets from Bitwarden
 # Usage: process_bw_templates <bw_item_name> <templates_dir> [options]
 # Options: --merge-json (deep merge existing JSON files instead of overwriting)
@@ -140,6 +112,14 @@ process_bw_templates() {
                         rm -f "$merged_output"
                     fi
                 fi
+            fi
+
+            # Check if target is a symlink pointing to the source file (stow managed)
+            # If so, do not overwrite it
+            if [ -L "$target_path" ] && [ "$(readlink -f "$target_path")" = "$(readlink -f "$tmpl_path")" ]; then
+                # echo "Skipping stowed file: $target_path"
+                rm -f "$temp_output"
+                continue
             fi
 
             backup_if_changed "$target_path" "$temp_output"

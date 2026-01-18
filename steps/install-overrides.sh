@@ -1,7 +1,5 @@
 #!/bin/bash
-rm -rf ~/.config/hypr/overrides.conf
-[ -d "dotfiles" ] && STOW_DIR="dotfiles" || STOW_DIR="../dotfiles"
-stow -t "$HOME" -d "$STOW_DIR" hyprland
+safe_stow hyprland
 
 
 HYPRLAND_CONFIG="$HOME/.config/hypr/hyprland.conf"
