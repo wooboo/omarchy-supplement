@@ -1,0 +1,220 @@
+#!/bin/bash
+
+# Antigravity/Gemini Quota Usage Script
+# Queries Google Cloud Code Assist API for quota information
+
+set -euo pipefail
+
+# Config file locations (check multiple paths like the TS plugin does)
+CONFIG_PATHS=(
+    "$HOME/.config/opencode/antigravity-accounts.json"
+    "$HOME/.local/share/opencode/antigravity-accounts.json"
+)
+
+CLIENT_ID="1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
+CLIENT_SECRET="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"
+
+# API endpoints
+CLOUDCODE_PROD="https://cloudcode-pa.googleapis.com"
+
+# Headers matching antigravity client
+USER_AGENT="antigravity/1.11.5 linux/amd64"
+X_GOOG_API_CLIENT="google-cloud-sdk vscode_cloudshelleditor/0.1"
+
+# Check dependencies
+for cmd in curl jq awk; do
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "Error: $cmd is required but not installed."
+        exit 1
+    fi
+done
+
+# Find config file
+CONFIG_FILE=""
+for path in "${CONFIG_PATHS[@]}"; do
+    if [ -f "$path" ]; then
+        CONFIG_FILE="$path"
+        break
+    fi
+done
+
+if [ -z "$CONFIG_FILE" ]; then
+    echo "Error: Antigravity accounts not found."
+    echo "Checked: ${CONFIG_PATHS[*]}"
+    echo "Run 'opencode auth login google' first."
+    exit 1
+fi
+
+# Refresh access token using refresh token
+refresh_access_token() {
+    local refresh_token="$1"
+    
+    local response=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "client_id=$CLIENT_ID" \
+        -d "client_secret=$CLIENT_SECRET" \
+        -d "refresh_token=$refresh_token" \
+        -d "grant_type=refresh_token")
+    
+    echo "$response" | jq -r '.access_token // empty'
+}
+
+# Get project ID if not already known
+get_project_id() {
+    local access_token="$1"
+    
+    local response=$(curl -s -X POST "$CLOUDCODE_PROD/v1internal:loadCodeAssist" \
+        -H "Authorization: Bearer $access_token" \
+        -H "Content-Type: application/json" \
+        -H "User-Agent: $USER_AGENT" \
+        -H "X-Goog-Api-Client: $X_GOOG_API_CLIENT" \
+        -d '{
+            "metadata": {
+                "ideType": "ANTIGRAVITY",
+                "platform": "PLATFORM_UNSPECIFIED",
+                "pluginType": "GEMINI"
+            }
+        }')
+    
+    # Extract project ID from cloudaicompanionProject field
+    echo "$response" | jq -r '.cloudaicompanionProject // .managedProject // empty' | sed 's|.*/||'
+}
+
+# Fetch quota for all models
+fetch_quota() {
+    local access_token="$1"
+    local project_id="$2"
+    
+    local payload="{}"
+    if [ -n "$project_id" ]; then
+        payload="{\"project\": \"$project_id\"}"
+    fi
+    
+    curl -s -X POST "$CLOUDCODE_PROD/v1internal:fetchAvailableModels" \
+        -H "Authorization: Bearer $access_token" \
+        -H "Content-Type: application/json" \
+        -H "User-Agent: $USER_AGENT" \
+        -H "X-Goog-Api-Client: $X_GOOG_API_CLIENT" \
+        -d "$payload"
+}
+
+# Format quota bar
+format_bar() {
+    local percent="$1"
+    local width=10
+    local filled=$((percent * width / 100))
+    local empty=$((width - filled))
+    
+    printf "["
+    for ((i=0; i<filled; i++)); do printf "█"; done
+    for ((i=0; i<empty; i++)); do printf "░"; done
+    printf "] %3d%%" "$percent"
+}
+
+# Format reset time
+format_reset_time() {
+    local reset_seconds="$1"
+    local now=$(date +%s)
+    local diff=$((reset_seconds - now))
+    
+    if [ "$diff" -le 0 ]; then
+        echo "Ready"
+        return
+    fi
+    
+    local days=$((diff / 86400))
+    local hours=$(((diff % 86400) / 3600))
+    local mins=$(((diff % 3600) / 60))
+    
+    if [ "$days" -gt 0 ]; then
+        echo "${days}d ${hours}h"
+    elif [ "$hours" -gt 0 ]; then
+        echo "${hours}h ${mins}m"
+    else
+        echo "${mins}m"
+    fi
+}
+
+# Process each account
+process_accounts() {
+    local accounts=$(jq -c '.accounts[]' "$CONFIG_FILE")
+    
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Antigravity Quota Status"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo
+    
+    echo "$accounts" | while read -r account; do
+        local email=$(echo "$account" | jq -r '.email')
+        local refresh_token=$(echo "$account" | jq -r '.refreshToken')
+        local project_id=$(echo "$account" | jq -r '.managedProjectId // .projectId // empty')
+        
+        echo "▶ $email"
+        echo
+        
+        # Get access token
+        local access_token=$(refresh_access_token "$refresh_token")
+        if [ -z "$access_token" ]; then
+            echo "  ⚠ Failed to refresh access token"
+            echo
+            continue
+        fi
+        
+        # Get project ID if needed
+        if [ -z "$project_id" ]; then
+            project_id=$(get_project_id "$access_token")
+            if [ -z "$project_id" ]; then
+                echo "  ⚠ Failed to get project ID"
+                echo
+                continue
+            fi
+        fi
+        
+        # Fetch quota
+        local quota_response=$(fetch_quota "$access_token" "$project_id")
+        
+        # Check for errors first
+        local error=$(echo "$quota_response" | jq -r '.error.message // empty' 2>/dev/null)
+        if [ -n "$error" ]; then
+            echo "  ⚠ Error: $error"
+            echo
+            sleep 0.3
+            continue
+        fi
+        
+        # Parse and display models (models is an object, not array)
+        # Filter out unwanted models and sort by display name
+        echo "$quota_response" | jq -r '
+            .models // {} | to_entries[] | 
+            select(.value.displayName != null) |
+            select(.value.displayName | test("^(chat_|rev19|Gemini 2\\.5|Gemini 3 Pro Image)"; "i") | not) |
+            [.key, .value.displayName, (.value.quotaInfo.remainingFraction // 1), (.value.quotaInfo.resetTime // "")] | 
+            @tsv
+        ' 2>/dev/null | sort -t$'\t' -k2 | while IFS=$'\t' read -r model_key name remaining reset_time; do
+            [ -z "$name" ] && continue
+            
+            # Convert fraction to percentage
+            local percent=$(awk "BEGIN {printf \"%.0f\", $remaining * 100}")
+            [ -z "$percent" ] && percent=100
+            [ "$percent" -gt 100 ] && percent=100
+            
+            # Format reset time
+            local reset_str="Ready"
+            if [ -n "$reset_time" ]; then
+                local reset_epoch=$(date -d "$reset_time" +%s 2>/dev/null || echo "0")
+                if [ "$reset_epoch" -gt 0 ]; then
+                    reset_str=$(format_reset_time "$reset_epoch")
+                fi
+            fi
+            
+            printf "  %-40s %s  Reset: %s\n" "$name" "$(format_bar "$percent")" "$reset_str"
+        done
+        
+        echo
+        
+        # Small delay between accounts to avoid rate limiting
+        sleep 0.3
+    done
+}
+
+process_accounts

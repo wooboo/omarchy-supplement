@@ -7,5 +7,6 @@ safe_stow bash
 safe_stow starship
 safe_stow fastfetch
 safe_stow git
+safe_stow scripts
 
 

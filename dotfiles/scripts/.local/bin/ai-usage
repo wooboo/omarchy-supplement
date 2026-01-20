@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# AI Usage - Combined quota status for all AI services
+
+~/.local/bin/antigravity-usage 2>/dev/null || true
+~/.local/bin/copilot-usage 2>/dev/null || true

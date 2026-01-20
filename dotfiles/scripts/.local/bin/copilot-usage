@@ -1,0 +1,172 @@
+#!/bin/bash
+
+# GitHub Copilot Quota Usage Script
+# Queries GitHub Copilot API for quota information
+
+set -euo pipefail
+
+# Config file locations
+CONFIG_PATHS=(
+    "$HOME/.config/github-copilot/apps.json"
+    "$HOME/.local/share/opencode/auth.json"
+)
+
+# Check dependencies
+for cmd in curl jq awk; do
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "Error: $cmd is required but not installed."
+        exit 1
+    fi
+done
+
+# Find token from config files
+get_token() {
+    # Check environment variable first
+    if [ -n "${GITHUB_COPILOT_TOKEN:-}" ]; then
+        echo "$GITHUB_COPILOT_TOKEN"
+        return
+    fi
+    
+    # Try github-copilot config (VS Code format)
+    local copilot_config="$HOME/.config/github-copilot/apps.json"
+    if [ -f "$copilot_config" ]; then
+        local token=$(jq -r 'to_entries[0].value.oauth_token // empty' "$copilot_config" 2>/dev/null)
+        if [ -n "$token" ]; then
+            echo "$token"
+            return
+        fi
+    fi
+    
+    # Try opencode auth.json
+    local opencode_config="$HOME/.local/share/opencode/auth.json"
+    if [ -f "$opencode_config" ]; then
+        local token=$(jq -r '.["github-copilot"].access // empty' "$opencode_config" 2>/dev/null)
+        if [ -n "$token" ]; then
+            echo "$token"
+            return
+        fi
+    fi
+}
+
+# Format quota bar
+format_bar() {
+    local percent="$1"
+    local width=10
+    local filled=$((percent * width / 100))
+    local empty=$((width - filled))
+    
+    printf "["
+    for ((i=0; i<filled; i++)); do printf "█"; done
+    for ((i=0; i<empty; i++)); do printf "░"; done
+    printf "] %3d%%" "$percent"
+}
+
+# Format reset time
+format_reset_time() {
+    local reset_date="$1"
+    local now=$(date +%s)
+    local reset_epoch=$(date -d "$reset_date" +%s 2>/dev/null || echo "0")
+    
+    if [ "$reset_epoch" -le 0 ]; then
+        echo "Unknown"
+        return
+    fi
+    
+    local diff=$((reset_epoch - now))
+    
+    if [ "$diff" -le 0 ]; then
+        echo "Ready"
+        return
+    fi
+    
+    local days=$((diff / 86400))
+    local hours=$(((diff % 86400) / 3600))
+    local mins=$(((diff % 3600) / 60))
+    
+    if [ "$days" -gt 0 ]; then
+        echo "${days}d ${hours}h"
+    elif [ "$hours" -gt 0 ]; then
+        echo "${hours}h ${mins}m"
+    else
+        echo "${mins}m"
+    fi
+}
+
+# Format quota name
+format_quota_name() {
+    local id="$1"
+    case "$id" in
+        "chat") echo "Chat" ;;
+        "completions") echo "Code Completions" ;;
+        "premium_interactions") echo "Premium Requests (Claude/o1/etc)" ;;
+        *) echo "$id" ;;
+    esac
+}
+
+# Main
+TOKEN=$(get_token)
+if [ -z "$TOKEN" ]; then
+    echo "Error: Token not found."
+    echo "Run 'copilot-login' or 'opencode auth login github-copilot' first."
+    exit 1
+fi
+
+# Fetch user info
+response=$(curl -s -H "Authorization: Bearer $TOKEN" \
+    -H "Accept: application/json" \
+    https://api.github.com/copilot_internal/user)
+
+# Check for errors
+error=$(echo "$response" | jq -r '.message // empty' 2>/dev/null)
+if [ -n "$error" ]; then
+    echo "Error: $error"
+    exit 1
+fi
+
+# Extract info
+plan=$(echo "$response" | jq -r '.copilot_plan // "unknown"')
+reset_date=$(echo "$response" | jq -r '.quota_reset_date_utc // .quota_reset_date // empty')
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  GitHub Copilot Quota Status"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo
+echo "▶ Plan: $plan"
+echo
+
+# Parse and display quotas
+echo "$response" | jq -r '
+    .quota_snapshots // {} | to_entries[] |
+    [.key, (.value.percent_remaining // 100), (.value.unlimited // false), (.value.remaining // 0), (.value.entitlement // 0)] |
+    @tsv
+' 2>/dev/null | while IFS=$'\t' read -r quota_id percent_remaining unlimited remaining entitlement; do
+    [ -z "$quota_id" ] && continue
+    
+    name=$(format_quota_name "$quota_id")
+    
+    # Handle unlimited quotas
+    if [ "$unlimited" = "true" ]; then
+        printf "  %-40s [██████████] Unlimited\n" "$name"
+    else
+        # Round percentage
+        percent=$(awk "BEGIN {printf \"%.0f\", $percent_remaining}")
+        [ -z "$percent" ] && percent=100
+        [ "$percent" -gt 100 ] && percent=100
+        [ "$percent" -lt 0 ] && percent=0
+        
+        # Format remaining/total
+        usage_info=""
+        if [ "$entitlement" -gt 0 ]; then
+            usage_info=" ($remaining/$entitlement)"
+        fi
+        
+        printf "  %-40s %s%s\n" "$name" "$(format_bar "$percent")" "$usage_info"
+    fi
+done
+
+echo
+if [ -n "$reset_date" ]; then
+    reset_str=$(format_reset_time "$reset_date")
+    echo "  Reset: $reset_str ($reset_date)"
+fi
+echo
