@@ -1,0 +1,13 @@
+[user]
+name = "YeonGyu Kim"
+email = "yeongyu.kim@gmail.com"
+
+[ui]
+default-command = "log"
+paginate = "auto"
+# Use nvim as the default editor for jujutsu
+editor = "nvim"
+
+[git]
+# Automatically create a git-compatible backend
+backend = "git"

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+print_step "Secrets Helper" "Defines functions for Bitwarden secrets and template processing"
+
 # Ensure prerequisites for secrets management
 yay -S --noconfirm --needed gomplate-bin jq npm
 

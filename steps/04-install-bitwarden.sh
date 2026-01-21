@@ -1,5 +1,7 @@
 #!/bin/sh
 
+print_step "Bitwarden CLI" "Installs and configures Bitwarden CLI"
+
 set_server() {
     local current_server
     current_server=$(bw config list 2>/dev/null | jq -r '.server // ""')

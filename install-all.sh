@@ -4,7 +4,6 @@ sudo pacman -Syyu --noconfirm
 # Source all scripts in the steps folder
 for script in "$REPO_ROOT/steps"/*.sh; do
     if [ -f "$script" ]; then
-        echo "Sourcing $script..."
         source "$script"
     fi
 done

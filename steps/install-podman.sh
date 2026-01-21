@@ -1,5 +1,7 @@
 #!/bin/sh
 
+print_step "Podman" "Installs Podman as a Docker replacement"
+
 if pacman -Qi docker >/dev/null 2>&1 || pacman -Qi docker-compose >/dev/null 2>&1; then
     echo "Removing docker/docker-compose..."
     sudo pacman -Rns --noconfirm docker docker-compose

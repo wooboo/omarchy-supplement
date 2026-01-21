@@ -1,4 +1,5 @@
 #!/bin/bash
+print_step "Hyprland Overrides" "Configures Hyprland overrides and stows configuration"
 safe_stow hyprland
 
 

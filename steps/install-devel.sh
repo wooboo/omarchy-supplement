@@ -1,5 +1,7 @@
 #!/bin/sh
 
+print_step "Development Tools" "Installs base development tools, Rust, and Node.js environments"
+
 # Handle conflicts: remove rust if rustup is desired
 if pacman -Qi "rust" >/dev/null 2>&1; then
     echo "Removing conflicting package rust..."

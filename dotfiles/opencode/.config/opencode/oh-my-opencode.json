@@ -3,25 +3,25 @@
   "google_auth": false,
   "agents": {
     "Sisyphus": {
-      "model": "google/antigravity-claude-opus-4-5-thinking"
+      "model": "opencode/glm-4.7-free"
     },
     "librarian": {
-      "model": "google/antigravity-gemini-3-flash"
+      "model": "opencode/glm-4.7-free"
     },
     "explore": {
-      "model": "google/antigravity-gemini-3-flash"
+      "model": "opencode/glm-4.7-free"
     },
     "oracle": {
-      "model": "google/antigravity-gemini-3-pro"
+      "model": "opencode/glm-4.7-free"
     },
     "frontend-ui-ux-engineer": {
-      "model": "google/antigravity-gemini-3-pro"
+      "model": "opencode/glm-4.7-free"
     },
     "document-writer": {
-      "model": "google/antigravity-gemini-3-flash"
+      "model": "opencode/glm-4.7-free"
     },
     "multimodal-looker": {
-      "model": "google/antigravity-gemini-3-flash"
+      "model": "opencode/glm-4.7-free"
     }
   }
 }

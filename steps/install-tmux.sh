@@ -1,9 +1,6 @@
 #!/bin/sh
 
-
-
-
-
+print_step "Tmux" "Installs Tmux, TPM, and stows configuration"
 
 # Install tmux
 yay -S --noconfirm --needed tmux

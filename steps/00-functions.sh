@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Function to print step header
+# Usage: print_step <name> <description>
+print_step() {
+    local NAME="$1"
+    local DESCRIPTION="$2"
+    echo "================================================================================"
+    echo "STEP: $NAME"
+    echo "DESC: $DESCRIPTION"
+    echo "================================================================================"
+}
+
 # Function to backup a file if it exists and differs from a new version
 # Usage: backup_if_changed <target_file> <new_file_source>
 backup_if_changed() {
