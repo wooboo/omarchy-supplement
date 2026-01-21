@@ -26,17 +26,37 @@ backup_if_changed() {
         return 0
     fi
 
-    local BACKUP="${TARGET}.${TIMESTAMP}.bak"
-    echo "Changes detected in $TARGET. Backing up to $BACKUP"
-    
-    # Show diff
-    if command -v colordiff >/dev/null 2>&1; then
-        colordiff -u "$TARGET" "$NEW_SOURCE"
-    else
-        diff -u --color=always "$TARGET" "$NEW_SOURCE"
+    # Check against latest backup to avoid duplicates
+    # Sort reverse alphabetical (newest timestamp first)
+    local LATEST_BACKUP=$(ls -1 "${TARGET}".*.bak 2>/dev/null | sort -r | head -n 1)
+    local CREATE_BACKUP=true
+
+    if [ -n "$LATEST_BACKUP" ] && cmp -s "$TARGET" "$LATEST_BACKUP"; then
+        echo "Target $TARGET differs from source, but is identical to latest backup ($LATEST_BACKUP)."
+        echo "Skipping creation of redundant backup."
+        CREATE_BACKUP=false
     fi
 
-    cp "$TARGET" "$BACKUP"
+    if [ "$CREATE_BACKUP" = true ]; then
+        local BACKUP="${TARGET}.${TIMESTAMP}.bak"
+        echo "Changes detected in $TARGET. Backing up to $BACKUP"
+        
+        # Show diff
+        if command -v colordiff >/dev/null 2>&1; then
+            colordiff -u "$TARGET" "$NEW_SOURCE"
+        else
+            diff -u --color=always "$TARGET" "$NEW_SOURCE"
+        fi
+
+        cp "$TARGET" "$BACKUP"
+    fi
+
+    # Rotation: Keep only last 3 backups
+    # List backups, sort reverse (newest first), skip first 3, delete rest
+    ls -1 "${TARGET}".*.bak 2>/dev/null | sort -r | tail -n +4 | while read -r old_backup; do
+        echo "Rotating old backup: removing $old_backup"
+        rm "$old_backup"
+    done
 }
 
 # Function to safely stow a package with backup

@@ -95,38 +95,6 @@ process_bw_templates() {
             
             mv "$temp_output" "$target_path"
             chmod 600 "$target_path"
-        else
-            target_path="$HOME/$rel_path"
-            mkdir -p "$(dirname "$target_path")"
-            
-            # Use temporary file to allow merging for non-template JSONs too
-            temp_output=$(mktemp)
-            cp "$tmpl_path" "$temp_output"
-
-            if [[ "$OPTIONS" == *"--merge-json"* ]] && [ -f "$target_path" ]; then
-                if jq -e . "$target_path" >/dev/null 2>&1 && jq -e . "$temp_output" >/dev/null 2>&1; then
-                    merged_output=$(mktemp)
-                    echo "Merging JSON changes for $target_path..."
-                    if jq -s '.[0] * .[1]' "$target_path" "$temp_output" > "$merged_output"; then
-                        mv "$merged_output" "$temp_output"
-                    else
-                        echo "Warning: JSON merge failed for $target_path, falling back to overwrite."
-                        rm -f "$merged_output"
-                    fi
-                fi
-            fi
-
-            # Check if target is a symlink pointing to the source file (stow managed)
-            # If so, do not overwrite it
-            if [ -L "$target_path" ] && [ "$(readlink -f "$target_path")" = "$(readlink -f "$tmpl_path")" ]; then
-                # echo "Skipping stowed file: $target_path"
-                rm -f "$temp_output"
-                continue
-            fi
-
-            backup_if_changed "$target_path" "$temp_output"
-            
-            mv "$temp_output" "$target_path"
         fi
     done
 
